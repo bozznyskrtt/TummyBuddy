@@ -1,0 +1,40 @@
+{
+  "_doc": "Biochemical reactions, compiled into a Tellurium/Antimony model at runtime by core/biochemistry.py. Vmax params are filled from the user's personal enzyme_levels (Pillar 3). Active interactions modify these Vmax values before the run.",
+
+  "lactose_hydrolysis": {
+    "equation": "lactose -> glucose + galactose",
+    "enzyme": "lactase",
+    "kinetics": "michaelis_menten",
+    "Vmax_param": "lactase_Vmax",
+    "Km": 0.05
+  },
+
+  "starch_digestion": {
+    "equation": "starch -> maltose",
+    "enzyme": "amylase",
+    "kinetics": "michaelis_menten",
+    "Vmax_param": "amylase_Vmax",
+    "Km": 0.08,
+    "note": "salivary amylase is inactivated at low gastric pH; rate falls as pH drops"
+  },
+
+  "protein_digestion": {
+    "equation": "protein -> peptides",
+    "enzyme": "pepsin",
+    "kinetics": "michaelis_menten",
+    "Vmax_param": "pepsin_Vmax",
+    "Km": 0.1,
+    "pH_dependent": true,
+    "optimal_pH": 2.0,
+    "note": "pepsin only active at low pH — couple rate to state.pH"
+  },
+
+  "ethanol_oxidation": {
+    "equation": "ethanol -> acetaldehyde -> acetate",
+    "enzymes": ["ADH", "ALDH"],
+    "kinetics": "michaelis_menten",
+    "Vmax_params": { "step1_ADH": "ADH_Vmax", "step2_ALDH": "ALDH_Vmax" },
+    "Km": { "step1_ADH": 0.02, "step2_ALDH": 0.01 },
+    "note": "acetaldehyde is the irritant; if ALDH is suppressed it accumulates"
+  }
+}

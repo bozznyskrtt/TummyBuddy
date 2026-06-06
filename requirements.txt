@@ -1,0 +1,3 @@
+# Root install file for GitHub users.
+# The engine-specific dependencies live next to the package.
+-r gastric_engine/requirements.txt

@@ -1,0 +1,111 @@
+{
+  "_doc": "AUTHORITATIVE compound vocabulary. The engine iterates over whatever keys appear here. To make the engine respond to a new substance, add a row HERE — never write a new Python module. Mirrored for upstream in INPUT_CONTRACT.md.",
+
+  "CO2_dissolved": {
+    "type": "gas_precursor",
+    "unit": "g",
+    "reactions": [],
+    "physical_effects": [
+      { "law": "henry_release", "target": "gas_volume_ml", "rate_param": "k_co2_release" }
+    ]
+  },
+
+  "fat": {
+    "type": "lipid",
+    "unit": "g",
+    "reactions": [],
+    "physical_effects": [
+      { "law": "cck_feedback", "target": "emptying_rate", "strength": 0.7 }
+    ]
+  },
+
+  "lactose": {
+    "type": "carbohydrate",
+    "unit": "g",
+    "reactions": ["lactose_hydrolysis"],
+    "physical_effects": [
+      { "law": "osmotic", "target": "osmolality", "coefficient": 0.9 }
+    ],
+    "if_undigested": { "ferments_in": "intestine", "gas_yield": 0.6 }
+  },
+
+  "FODMAP": {
+    "type": "fermentable_carb",
+    "unit": "g",
+    "reactions": [],
+    "physical_effects": [
+      { "law": "osmotic", "target": "osmolality", "coefficient": 0.7 }
+    ],
+    "if_undigested": { "ferments_in": "intestine", "gas_yield": 0.8 }
+  },
+
+  "fiber": {
+    "type": "bulk",
+    "unit": "g",
+    "reactions": [],
+    "physical_effects": [
+      { "law": "bulk", "target": "solid_volume_ml", "coefficient": 4.0 }
+    ]
+  },
+
+  "starch": {
+    "type": "carbohydrate",
+    "unit": "g",
+    "reactions": ["starch_digestion"],
+    "physical_effects": []
+  },
+
+  "protein": {
+    "type": "protein",
+    "unit": "g",
+    "reactions": ["protein_digestion"],
+    "physical_effects": [
+      { "law": "buffering", "target": "buffering_capacity", "coefficient": 0.4 }
+    ]
+  },
+
+  "ethanol": {
+    "type": "alcohol",
+    "unit": "g",
+    "reactions": ["ethanol_oxidation"],
+    "physical_effects": [
+      { "law": "les_relaxation", "target": "fundus_pressure", "coefficient": 0.25 },
+      { "law": "irritation",     "target": "irritation",      "coefficient": 0.30 }
+    ]
+  },
+
+  "caffeine": {
+    "type": "stimulant",
+    "unit": "mg",
+    "reactions": [],
+    "physical_effects": [
+      { "law": "acid_stimulation", "target": "acid_secretion_rate", "coefficient": 0.30 },
+      { "law": "les_relaxation",   "target": "fundus_pressure",     "coefficient": 0.20 }
+    ]
+  },
+
+  "acid_load": {
+    "type": "acid",
+    "unit": "ratio_0_1",
+    "reactions": [],
+    "physical_effects": [
+      { "law": "acidify", "target": "pH", "coefficient": -0.5 }
+    ]
+  },
+
+  "spice_capsaicin": {
+    "type": "irritant",
+    "unit": "ratio_0_1",
+    "reactions": [],
+    "physical_effects": [
+      { "law": "irritation", "target": "irritation", "coefficient": 0.5 }
+    ]
+  },
+
+  "durian_sulfur": {
+    "type": "interaction_trigger",
+    "unit": "ratio_0_1",
+    "reactions": [],
+    "physical_effects": []
+  }
+}

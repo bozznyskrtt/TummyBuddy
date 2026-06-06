@@ -1,0 +1,27 @@
+[
+  {
+    "_doc": "Molecular facts physics cannot derive. The general loop checks each trigger every step; when it fires, it applies the effect (e.g. modifying an enzyme Vmax). THIS is how durian+beer works with zero engine code — add a row, done.",
+
+    "id": "durian_alcohol_aldh",
+    "trigger": { "all_present": ["durian_sulfur", "ethanol"] },
+    "effect": { "modify_enzyme": "ALDH_Vmax", "multiply_by": 0.35 },
+    "evidence": "limited",
+    "explanation": "Durian sulfur compounds inhibit ALDH, slowing acetaldehyde clearance; acetaldehyde accumulates and irritates the mucosa."
+  },
+
+  {
+    "id": "nsaid_mucosa",
+    "trigger": { "profile_flag": "nsaid_use" },
+    "effect": { "reduce": "buffering_capacity", "by": 0.4 },
+    "evidence": "established",
+    "explanation": "NSAIDs impair the protective mucosal barrier, increasing acid irritation and ulcer risk."
+  },
+
+  {
+    "id": "hpylori_acid",
+    "trigger": { "profile_flag": "h_pylori_history" },
+    "effect": { "reduce": "mucosal_resilience", "by": 0.3 },
+    "evidence": "established",
+    "explanation": "H. pylori colonization weakens mucosal defense, raising gastritis/ulcer irritation susceptibility."
+  }
+]

@@ -1,0 +1,35 @@
+{
+  "_doc": "Default stomach properties for an average adult, and the rules that turn clinical flags into continuous properties (Pillar 3). profile_builder.py starts from defaults, applies clinical_modifiers for any true flag, then overlays any learned_physiology from the Bayesian loop.",
+
+  "defaults": {
+    "physiology": {
+      "gastric_capacity_ml": 1000,
+      "baseline_acid_secretion": 0.5,
+      "les_competence": 0.8,
+      "mucosal_resilience": 0.8,
+      "gastric_motility": 0.8
+    },
+    "enzyme_levels": {
+      "lactase_Vmax": 1.0,
+      "amylase_Vmax": 1.0,
+      "pepsin_Vmax": 1.0,
+      "ADH_Vmax": 1.0,
+      "ALDH_Vmax": 1.0
+    },
+    "symptom_thresholds": {
+      "reflux_pressure_threshold": 0.75,
+      "bloating_volume_threshold": 0.80,
+      "pain_irritation_threshold": 0.65,
+      "diarrhea_osmotic_threshold": 0.70
+    }
+  },
+
+  "clinical_modifiers": {
+    "reflux_gord":         { "physiology.les_competence": 0.5, "symptom_thresholds.reflux_pressure_threshold": 0.65 },
+    "gastritis_history":   { "physiology.mucosal_resilience": 0.6, "symptom_thresholds.pain_irritation_threshold": 0.55 },
+    "ulcer_history":       { "physiology.mucosal_resilience": 0.5 },
+    "lactose_intolerance": { "enzyme_levels.lactase_Vmax": 0.15 }
+  },
+
+  "calibration_note": "Rate constants (k_co2_release, cck_feedback strength, emptying t1/2) are set in utils/calibration.py against published gastric-emptying data: liquids t1/2 ~20 min, solids ~2 h, fat slows emptying via CCK feedback."
+}
