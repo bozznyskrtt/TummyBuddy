@@ -20,22 +20,21 @@ def reset_transient_effects(state: GutState, physiology: dict) -> None:
     state.acid_load_effect = 0.0
 
 
-def apply_physical_effect(
+def apply_properties(
     state: GutState,
-    effect: dict,
+    properties: dict,
     amount: float,
-    physiology: dict,
     *,
     compound: str,
     dt_min: float,
 ) -> None:
-    law = effect.get("law")
-    coefficient = float(effect.get("coefficient", effect.get("strength", 1.0)))
     amount = max(0.0, float(amount or 0.0))
 
-    if law == "henry_release":
+    carbonation = _property_value(properties, "carbonation")
+    if carbonation > 0.0:
+        releasable = state.stomach_species.get(compound, 0.0) * carbonation
         release = first_order_release(
-            state.stomach_species.get(compound, 0.0),
+            releasable,
             calibration.CO2_RELEASE_RATE_PER_MIN,
             dt_min,
         )
@@ -43,24 +42,40 @@ def apply_physical_effect(
             0.0, state.stomach_species.get(compound, 0.0) - release
         )
         state.gas_volume_ml += release * calibration.CO2_GAS_ML_PER_G
-    elif law == "cck_feedback":
-        state.fat_brake += coefficient * amount / (amount + 20.0)
-    elif law == "osmotic":
-        state.osmolality += coefficient * amount / 40.0
-    elif law == "buffering":
-        state.buffering_capacity += coefficient * amount / (amount + 40.0)
-    elif law == "acid_stimulation":
-        state.acid_secretion_rate += coefficient * _normalized_amount(compound, amount)
-    elif law == "acidify":
-        state.acid_load_effect += coefficient * amount
-    elif law == "les_relaxation":
-        state.les_relaxation += coefficient * _normalized_amount(compound, amount)
-    elif law == "irritation":
-        state.irritation += coefficient * _normalized_amount(compound, amount)
-    elif law == "bulk":
-        # Bulk volume is supplied by meal_physical. Keep fiber data-driven without
-        # re-adding its volume every simulation step.
-        return
+
+    fat_emptying = _property_value(properties, "fat_emptying")
+    if fat_emptying > 0.0:
+        state.fat_brake += fat_emptying * amount / (amount + 20.0)
+
+    osmotic_coeff = _property_value(properties, "osmotic_coeff")
+    if osmotic_coeff > 0.0:
+        state.osmolality += osmotic_coeff * amount / 40.0
+
+    buffering = _property_value(properties, "buffering")
+    if buffering > 0.0:
+        state.buffering_capacity += buffering * amount / (amount + 40.0)
+
+    acid_secretagogue = _property_value(properties, "acid_secretagogue")
+    if acid_secretagogue > 0.0:
+        state.acid_secretion_rate += acid_secretagogue * _potent_amount(
+            properties, "acid_secretagogue", amount
+        )
+
+    acid_load = _property_value(properties, "acid_load")
+    if acid_load > 0.0:
+        state.acid_load_effect -= acid_load * amount
+
+    les_relaxant = _property_value(properties, "les_relaxant")
+    if les_relaxant > 0.0:
+        state.les_relaxation += les_relaxant * _potent_amount(
+            properties, "les_relaxant", amount
+        )
+
+    irritant_potential = _property_value(properties, "irritant_potential")
+    if irritant_potential > 0.0:
+        state.irritation += irritant_potential * _potent_amount(
+            properties, "irritant_potential", amount
+        )
 
 
 def update_mechanics(state: GutState, physiology: dict) -> None:
@@ -128,9 +143,13 @@ def vent_gas(state: GutState, dt_min: float) -> None:
     )
 
 
-def _normalized_amount(compound: str, amount: float) -> float:
-    if compound == "caffeine":
-        return amount / 100.0
-    if compound == "ethanol":
-        return amount / 25.0
-    return amount
+def _property_value(properties: dict, dimension: str) -> float:
+    return max(0.0, float(properties.get(dimension, 0.0) or 0.0))
+
+
+def _potent_amount(properties: dict, dimension: str, amount: float) -> float:
+    potency = properties.get("potency", {})
+    amount_scale = 1.0
+    if isinstance(potency, dict):
+        amount_scale = float(potency.get(dimension, 1.0) or 1.0)
+    return amount / max(amount_scale, 1e-9)

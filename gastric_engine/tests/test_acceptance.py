@@ -1,4 +1,5 @@
 import math
+from copy import deepcopy
 
 import pytest
 
@@ -95,18 +96,18 @@ def test_liquid_emptying_half_life_is_about_20_minutes():
     assert 15 <= time[half_index] <= 25
 
 
-def test_new_compound_row_applies_physical_effect_without_engine_change():
+def test_new_compound_row_applies_property_vector_without_engine_change():
     from gastric_engine.core.engine import simulate_core
     from gastric_engine.knowledge_base.loader import load_knowledge_base
     from gastric_engine.physiology.profile_builder import build_profile
 
     kb = load_knowledge_base()
+    properties = deepcopy(kb.property_schema["defaults"])
+    properties["osmotic_coeff"] = 1.0
     kb.compounds["demo_solute"] = {
         "unit": "g",
         "reactions": [],
-        "physical_effects": [
-            {"law": "osmotic", "target": "osmolality", "coefficient": 1.2}
-        ],
+        "properties": properties,
     }
 
     physiology = build_profile({})
@@ -323,9 +324,13 @@ def test_bayesian_learning_lowers_lactase_and_next_prediction_risk_rises():
     )
 
 
-def test_safety_and_unknown_compounds_affect_response():
+def test_safety_and_characterized_compounds_affect_response(tmp_path, monkeypatch):
     from gastric_engine.api.routes import simulate_endpoint
 
+    monkeypatch.setenv(
+        "GASTRIC_ENGINE_CHARACTERIZATION_CACHE",
+        str(tmp_path / "characterization_cache.json"),
+    )
     response = simulate_endpoint(
         sample_request(
             chemicals={"CO2_dissolved": 1.2, "mystery_extract": 5},
@@ -333,6 +338,7 @@ def test_safety_and_unknown_compounds_affect_response():
         )
     )
 
-    assert response["unknown_compounds"] == ["mystery_extract"]
+    assert response["unknown_compounds"] == []
+    assert response["metadata"]["low_confidence_substances"] == ["mystery_extract"]
     assert response["summary"]["confidence"] == "low"
     assert response["safety_flags"][0]["urgency"] == "urgent"

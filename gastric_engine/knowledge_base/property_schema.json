@@ -1,0 +1,94 @@
+{
+  "_doc": "Canonical open-world property dimensions. Compound names are cache keys; physics consumes these properties.",
+  "dimensions": {
+    "acid_load": {
+      "type": "number",
+      "min": 0.0,
+      "max": 1.0,
+      "replaces_law": "acidify",
+      "physics_target": "pH"
+    },
+    "buffering": {
+      "type": "number",
+      "min": 0.0,
+      "max": 1.0,
+      "replaces_law": "buffering",
+      "physics_target": "buffering_capacity"
+    },
+    "osmotic_coeff": {
+      "type": "number",
+      "min": 0.0,
+      "max": 1.0,
+      "replaces_law": "osmotic",
+      "physics_target": "osmolality"
+    },
+    "carbonation": {
+      "type": "number",
+      "min": 0.0,
+      "max": 1.0,
+      "replaces_law": "henry_release",
+      "physics_target": "gas_volume_ml"
+    },
+    "fat_emptying": {
+      "type": "number",
+      "min": 0.0,
+      "max": 1.0,
+      "replaces_law": "cck_feedback",
+      "physics_target": "fat_brake"
+    },
+    "les_relaxant": {
+      "type": "number",
+      "min": 0.0,
+      "max": 1.0,
+      "replaces_law": "les_relaxation",
+      "physics_target": "fundus_pressure"
+    },
+    "acid_secretagogue": {
+      "type": "number",
+      "min": 0.0,
+      "max": 1.0,
+      "replaces_law": "acid_stimulation",
+      "physics_target": "acid_secretion_rate"
+    },
+    "irritant_potential": {
+      "type": "number",
+      "min": 0.0,
+      "max": 1.0,
+      "replaces_law": "irritation",
+      "physics_target": "irritation"
+    },
+    "fermentability": {
+      "type": "number",
+      "min": 0.0,
+      "max": 1.0,
+      "replaces_law": "if_undigested.gas_yield",
+      "physics_target": "intestinal_gas_osmolality"
+    },
+    "bulk": {
+      "type": "number",
+      "min": 0.0,
+      "max": 1.0,
+      "replaces_law": "bulk",
+      "physics_target": "solid_volume_ml"
+    },
+    "enzyme_targets": {
+      "type": "map",
+      "replaces_law": "reactions",
+      "physics_target": "biochemistry_substrate_routing",
+      "allowed_values": ["substrate", "product", "modifier", "intermediate"]
+    }
+  },
+  "defaults": {
+    "acid_load": 0.0,
+    "buffering": 0.0,
+    "osmotic_coeff": 0.0,
+    "carbonation": 0.0,
+    "fat_emptying": 0.0,
+    "les_relaxant": 0.0,
+    "acid_secretagogue": 0.0,
+    "irritant_potential": 0.0,
+    "fermentability": 0.0,
+    "bulk": 0.0,
+    "enzyme_targets": {}
+  }
+}

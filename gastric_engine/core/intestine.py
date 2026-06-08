@@ -26,22 +26,22 @@ def ferment_in_intestine(state: GutState, kb, dt_min: float) -> None:
     osmotic_load = 0.0
     for compound, amount in list(state.intestine_species.items()):
         row = kb.compounds.get(compound, {})
-        ferment = row.get("if_undigested")
-        if not ferment or amount <= 0:
+        properties = row.get("properties", {})
+        fermentability = _property_value(properties, "fermentability")
+        if fermentability <= 0.0 or amount <= 0:
             continue
         fermented = first_order_release(amount, calibration.FERMENTATION_RATE_PER_MIN, dt_min)
         state.intestine_species[compound] = max(0.0, amount - fermented)
-        gas_yield = float(ferment.get("gas_yield", 0.6))
-        state.intestine_gas_ml += fermented * gas_yield * calibration.FERMENTATION_GAS_ML_PER_G
+        state.intestine_gas_ml += (
+            fermented * fermentability * calibration.FERMENTATION_GAS_ML_PER_G
+        )
 
     for compound, amount in state.intestine_species.items():
         row = kb.compounds.get(compound, {})
-        if not row.get("if_undigested"):
+        properties = row.get("properties", {})
+        if _property_value(properties, "fermentability") <= 0.0:
             continue
-        if compound == "lactose":
-            osmotic_load += amount * 0.040
-        elif compound == "FODMAP":
-            osmotic_load += amount * 0.035
+        osmotic_load += amount * _intestinal_osmotic_coeff(properties)
 
     state.intestine_osmolality = clamp(
         0.1 + osmotic_load + state.intestine_gas_ml * 0.0012,
@@ -49,3 +49,14 @@ def ferment_in_intestine(state: GutState, kb, dt_min: float) -> None:
         2.0,
     )
     state.cramping = sigmoid((state.intestine_osmolality - 0.55) * 5.0)
+
+
+def _property_value(properties: dict, dimension: str) -> float:
+    return max(0.0, float(properties.get(dimension, 0.0) or 0.0))
+
+
+def _intestinal_osmotic_coeff(properties: dict) -> float:
+    potency = properties.get("potency", {})
+    if isinstance(potency, dict) and "intestinal_osmotic_coeff" in potency:
+        return max(0.0, float(potency["intestinal_osmotic_coeff"]))
+    return _property_value(properties, "fermentability") * 0.05

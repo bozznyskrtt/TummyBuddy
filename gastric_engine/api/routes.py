@@ -23,15 +23,10 @@ def health() -> dict[str, str]:
 def simulate_endpoint(payload: dict) -> dict:
     kb = load_knowledge_base()
     chemicals = payload.get("chemicals", {}) or {}
-    unknown = sorted(
-        key
-        for key, value in chemicals.items()
-        if key not in kb.compound_keys and isinstance(value, (int, float)) and value
-    )
-    known_chemicals = {
+    clean_chemicals = {
         key: value
         for key, value in chemicals.items()
-        if key in kb.compound_keys and isinstance(value, (int, float))
+        if isinstance(value, (int, float)) and float(value) > 0
     }
     flags = safety_flags(payload.get("symptoms_reported"))
     physiology = build_profile(
@@ -39,15 +34,15 @@ def simulate_endpoint(payload: dict) -> dict:
         learned_physiology=payload.get("learned_physiology"),
     )
     result = simulate(
-        known_chemicals,
+        clean_chemicals,
         payload.get("meal_physical", {}),
         physiology,
         payload.get("simulation_config"),
         kb=kb,
     )
-    result["unknown_compounds"] = unknown
+    result["unknown_compounds"] = []
     result["safety_flags"] = flags
-    if unknown or flags:
+    if flags:
         result["summary"]["confidence"] = "low"
     return result
 

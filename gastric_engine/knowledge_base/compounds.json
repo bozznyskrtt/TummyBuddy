@@ -4,108 +4,232 @@
   "CO2_dissolved": {
     "type": "gas_precursor",
     "unit": "g",
-    "reactions": [],
-    "physical_effects": [
-      { "law": "henry_release", "target": "gas_volume_ml", "rate_param": "k_co2_release" }
-    ]
+    "properties": {
+      "acid_load": 0.0,
+      "buffering": 0.0,
+      "osmotic_coeff": 0.0,
+      "carbonation": 1.0,
+      "fat_emptying": 0.0,
+      "les_relaxant": 0.0,
+      "acid_secretagogue": 0.0,
+      "irritant_potential": 0.0,
+      "fermentability": 0.0,
+      "bulk": 0.0,
+      "enzyme_targets": {}
+    },
+    "reactions": []
   },
 
   "fat": {
     "type": "lipid",
     "unit": "g",
-    "reactions": [],
-    "physical_effects": [
-      { "law": "cck_feedback", "target": "emptying_rate", "strength": 0.7 }
-    ]
+    "properties": {
+      "acid_load": 0.0,
+      "buffering": 0.0,
+      "osmotic_coeff": 0.0,
+      "carbonation": 0.0,
+      "fat_emptying": 0.7,
+      "les_relaxant": 0.0,
+      "acid_secretagogue": 0.0,
+      "irritant_potential": 0.0,
+      "fermentability": 0.0,
+      "bulk": 0.0,
+      "enzyme_targets": {}
+    },
+    "reactions": []
   },
 
   "lactose": {
     "type": "carbohydrate",
     "unit": "g",
-    "reactions": ["lactose_hydrolysis"],
-    "physical_effects": [
-      { "law": "osmotic", "target": "osmolality", "coefficient": 0.9 }
-    ],
-    "if_undigested": { "ferments_in": "intestine", "gas_yield": 0.6 }
+    "properties": {
+      "acid_load": 0.0,
+      "buffering": 0.0,
+      "osmotic_coeff": 0.9,
+      "carbonation": 0.0,
+      "fat_emptying": 0.0,
+      "les_relaxant": 0.0,
+      "acid_secretagogue": 0.0,
+      "irritant_potential": 0.0,
+      "fermentability": 0.6,
+      "bulk": 0.0,
+      "enzyme_targets": { "lactase": "substrate" },
+      "potency": { "intestinal_osmotic_coeff": 0.04 }
+    },
+    "reactions": ["lactose_hydrolysis"]
   },
 
   "FODMAP": {
     "type": "fermentable_carb",
     "unit": "g",
-    "reactions": [],
-    "physical_effects": [
-      { "law": "osmotic", "target": "osmolality", "coefficient": 0.7 }
-    ],
-    "if_undigested": { "ferments_in": "intestine", "gas_yield": 0.8 }
+    "properties": {
+      "acid_load": 0.0,
+      "buffering": 0.0,
+      "osmotic_coeff": 0.7,
+      "carbonation": 0.0,
+      "fat_emptying": 0.0,
+      "les_relaxant": 0.0,
+      "acid_secretagogue": 0.0,
+      "irritant_potential": 0.0,
+      "fermentability": 0.8,
+      "bulk": 0.0,
+      "enzyme_targets": {},
+      "potency": { "intestinal_osmotic_coeff": 0.035 }
+    },
+    "reactions": []
   },
 
   "fiber": {
     "type": "bulk",
     "unit": "g",
-    "reactions": [],
-    "physical_effects": [
-      { "law": "bulk", "target": "solid_volume_ml", "coefficient": 4.0 }
-    ]
+    "properties": {
+      "acid_load": 0.0,
+      "buffering": 0.0,
+      "osmotic_coeff": 0.0,
+      "carbonation": 0.0,
+      "fat_emptying": 0.0,
+      "les_relaxant": 0.0,
+      "acid_secretagogue": 0.0,
+      "irritant_potential": 0.0,
+      "fermentability": 0.0,
+      "bulk": 1.0,
+      "enzyme_targets": {}
+    },
+    "reactions": []
   },
 
   "starch": {
     "type": "carbohydrate",
     "unit": "g",
-    "reactions": ["starch_digestion"],
-    "physical_effects": []
+    "properties": {
+      "acid_load": 0.0,
+      "buffering": 0.0,
+      "osmotic_coeff": 0.0,
+      "carbonation": 0.0,
+      "fat_emptying": 0.0,
+      "les_relaxant": 0.0,
+      "acid_secretagogue": 0.0,
+      "irritant_potential": 0.0,
+      "fermentability": 0.0,
+      "bulk": 0.0,
+      "enzyme_targets": { "amylase": "substrate" }
+    },
+    "reactions": ["starch_digestion"]
   },
 
   "protein": {
     "type": "protein",
     "unit": "g",
-    "reactions": ["protein_digestion"],
-    "physical_effects": [
-      { "law": "buffering", "target": "buffering_capacity", "coefficient": 0.4 }
-    ]
+    "properties": {
+      "acid_load": 0.0,
+      "buffering": 0.4,
+      "osmotic_coeff": 0.0,
+      "carbonation": 0.0,
+      "fat_emptying": 0.0,
+      "les_relaxant": 0.0,
+      "acid_secretagogue": 0.0,
+      "irritant_potential": 0.0,
+      "fermentability": 0.0,
+      "bulk": 0.0,
+      "enzyme_targets": { "pepsin": "substrate" }
+    },
+    "reactions": ["protein_digestion"]
   },
 
   "ethanol": {
     "type": "alcohol",
     "unit": "g",
-    "reactions": ["ethanol_oxidation"],
-    "physical_effects": [
-      { "law": "les_relaxation", "target": "fundus_pressure", "coefficient": 0.25 },
-      { "law": "irritation",     "target": "irritation",      "coefficient": 0.30 }
-    ]
+    "properties": {
+      "acid_load": 0.0,
+      "buffering": 0.0,
+      "osmotic_coeff": 0.0,
+      "carbonation": 0.0,
+      "fat_emptying": 0.0,
+      "les_relaxant": 0.25,
+      "acid_secretagogue": 0.0,
+      "irritant_potential": 0.3,
+      "fermentability": 0.0,
+      "bulk": 0.0,
+      "enzyme_targets": { "ADH": "substrate", "ALDH": "substrate" },
+      "potency": { "les_relaxant": 25.0, "irritant_potential": 25.0 }
+    },
+    "reactions": ["ethanol_oxidation"]
   },
 
   "caffeine": {
     "type": "stimulant",
     "unit": "mg",
-    "reactions": [],
-    "physical_effects": [
-      { "law": "acid_stimulation", "target": "acid_secretion_rate", "coefficient": 0.30 },
-      { "law": "les_relaxation",   "target": "fundus_pressure",     "coefficient": 0.20 }
-    ]
+    "properties": {
+      "acid_load": 0.0,
+      "buffering": 0.0,
+      "osmotic_coeff": 0.0,
+      "carbonation": 0.0,
+      "fat_emptying": 0.0,
+      "les_relaxant": 0.2,
+      "acid_secretagogue": 0.3,
+      "irritant_potential": 0.0,
+      "fermentability": 0.0,
+      "bulk": 0.0,
+      "enzyme_targets": {},
+      "potency": { "acid_secretagogue": 100.0, "les_relaxant": 100.0 }
+    },
+    "reactions": []
   },
 
   "acid_load": {
     "type": "acid",
     "unit": "ratio_0_1",
-    "reactions": [],
-    "physical_effects": [
-      { "law": "acidify", "target": "pH", "coefficient": -0.5 }
-    ]
+    "properties": {
+      "acid_load": 0.5,
+      "buffering": 0.0,
+      "osmotic_coeff": 0.0,
+      "carbonation": 0.0,
+      "fat_emptying": 0.0,
+      "les_relaxant": 0.0,
+      "acid_secretagogue": 0.0,
+      "irritant_potential": 0.0,
+      "fermentability": 0.0,
+      "bulk": 0.0,
+      "enzyme_targets": {}
+    },
+    "reactions": []
   },
 
   "spice_capsaicin": {
     "type": "irritant",
     "unit": "ratio_0_1",
-    "reactions": [],
-    "physical_effects": [
-      { "law": "irritation", "target": "irritation", "coefficient": 0.5 }
-    ]
+    "properties": {
+      "acid_load": 0.0,
+      "buffering": 0.0,
+      "osmotic_coeff": 0.0,
+      "carbonation": 0.0,
+      "fat_emptying": 0.0,
+      "les_relaxant": 0.0,
+      "acid_secretagogue": 0.0,
+      "irritant_potential": 0.5,
+      "fermentability": 0.0,
+      "bulk": 0.0,
+      "enzyme_targets": {}
+    },
+    "reactions": []
   },
 
   "durian_sulfur": {
     "type": "interaction_trigger",
     "unit": "ratio_0_1",
-    "reactions": [],
-    "physical_effects": []
+    "properties": {
+      "acid_load": 0.0,
+      "buffering": 0.0,
+      "osmotic_coeff": 0.0,
+      "carbonation": 0.0,
+      "fat_emptying": 0.0,
+      "les_relaxant": 0.0,
+      "acid_secretagogue": 0.0,
+      "irritant_potential": 0.0,
+      "fermentability": 0.0,
+      "bulk": 0.0,
+      "enzyme_targets": {}
+    },
+    "reactions": []
   }
 }

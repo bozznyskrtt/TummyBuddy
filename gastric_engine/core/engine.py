@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from copy import deepcopy
 
+from gastric_engine.characterization.cache import CharacterizationCache
+from gastric_engine.characterization.characterizer import characterize
 from gastric_engine.core.biochemistry import (
     apply_interactions,
     build_biochemistry_model,
@@ -15,7 +17,7 @@ from gastric_engine.core.intestine import empty_to_intestine, ferment_in_intesti
 from gastric_engine.core.output_builder import build_output
 from gastric_engine.core.physics import (
     advance_emptying,
-    apply_physical_effect,
+    apply_properties,
     reset_transient_effects,
     update_mechanics,
     vent_gas,
@@ -35,6 +37,7 @@ def simulate_core(
     config: dict | None = None,
     *,
     kb=None,
+    characterization_cache: CharacterizationCache | None = None,
 ) -> dict:
     kb = kb or load_knowledge_base()
     config = {**DEFAULT_CONFIG, **(config or {})}
@@ -42,11 +45,11 @@ def simulate_core(
     output_dt = float(config["output_dt_min"])
     output_times = _output_times(duration, output_dt)
 
-    clean_chemicals = {
-        key: float(value)
-        for key, value in chemicals.items()
-        if key in kb.compound_keys and isinstance(value, (int, float)) and float(value) > 0
-    }
+    clean_chemicals, characterization_metadata = _prepare_chemicals(
+        chemicals,
+        kb,
+        characterization_cache=characterization_cache,
+    )
     interactions = collect_active_interactions(clean_chemicals, physiology, kb)
     runtime_physiology = apply_interactions(physiology, interactions)
 
@@ -74,14 +77,18 @@ def simulate_core(
         history.append(state.snapshot())
 
     symptoms = derive_symptoms(history, runtime_physiology)
+    low_confidence_substances = characterization_metadata.get("low_confidence_substances", [])
+    metadata = {
+        "active_reactions": [reaction["id"] for reaction in reactions],
+        "active_interactions": [row["id"] for row in interactions],
+        "biochemistry_backend": bio_model.backend,
+        **characterization_metadata,
+    }
     return build_output(
         history,
         symptoms,
-        metadata={
-            "active_reactions": [reaction["id"] for reaction in reactions],
-            "active_interactions": [row["id"] for row in interactions],
-            "biochemistry_backend": bio_model.backend,
-        },
+        metadata=metadata,
+        confidence="low" if low_confidence_substances else "medium",
     )
 
 
@@ -92,9 +99,17 @@ def simulate(
     config: dict | None = None,
     *,
     kb=None,
+    characterization_cache: CharacterizationCache | None = None,
 ) -> dict:
     kb = kb or load_knowledge_base()
-    baseline = simulate_core(chemicals, meal_physical, physiology, config, kb=kb)
+    baseline = simulate_core(
+        chemicals,
+        meal_physical,
+        physiology,
+        config,
+        kb=kb,
+        characterization_cache=characterization_cache,
+    )
     root_causes = counterfactual_attribution(
         chemicals,
         meal_physical,
@@ -113,15 +128,57 @@ def _apply_compound_effects(state, physiology: dict, kb, *, dt_min: float) -> No
     reset_transient_effects(state, physiology)
     for compound, amount in list(state.stomach_species.items()):
         row = kb.compounds.get(compound, {})
-        for effect in row.get("physical_effects", []):
-            apply_physical_effect(
-                state,
-                effect,
-                amount,
-                physiology,
-                compound=compound,
-                dt_min=dt_min,
+        apply_properties(
+            state,
+            row.get("properties", {}),
+            amount,
+            compound=compound,
+            dt_min=dt_min,
+        )
+
+
+def _prepare_chemicals(
+    chemicals: dict[str, float],
+    kb,
+    *,
+    characterization_cache: CharacterizationCache | None,
+) -> tuple[dict[str, float], dict]:
+    clean_chemicals: dict[str, float] = {}
+    characterized_substances: list[dict] = []
+    low_confidence_substances: list[str] = []
+    cache = characterization_cache
+
+    for key, value in chemicals.items():
+        if not isinstance(value, (int, float)) or float(value) <= 0:
+            continue
+        if key not in kb.compound_keys:
+            cache = cache or CharacterizationCache()
+            result = characterize(key, kb=kb, cache=cache)
+            kb.compounds[key] = {
+                "type": "characterized",
+                "unit": "unknown",
+                "properties": result.properties,
+                "reactions": [],
+                "source": result.source,
+                "confidence": result.confidence,
+            }
+            characterized_substances.append(
+                {
+                    "substance": key,
+                    "source": result.source,
+                    "confidence": result.confidence,
+                }
             )
+            if result.confidence < 0.5:
+                low_confidence_substances.append(key)
+        clean_chemicals[key] = float(value)
+
+    metadata = {}
+    if characterized_substances:
+        metadata["characterized_substances"] = characterized_substances
+    if low_confidence_substances:
+        metadata["low_confidence_substances"] = low_confidence_substances
+    return clean_chemicals, metadata
 
 
 def _output_times(duration: float, output_dt: float) -> list[float]:
