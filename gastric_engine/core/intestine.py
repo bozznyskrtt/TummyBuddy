@@ -22,7 +22,12 @@ def empty_to_intestine(state: GutState, fraction: float) -> dict[str, float]:
     return flow
 
 
-def ferment_in_intestine(state: GutState, kb, dt_min: float) -> None:
+def ferment_in_intestine(
+    state: GutState,
+    kb,
+    dt_min: float,
+    calibration_params: dict,
+) -> None:
     osmotic_load = 0.0
     for compound, amount in list(state.intestine_species.items()):
         row = kb.compounds.get(compound, {})
@@ -33,7 +38,7 @@ def ferment_in_intestine(state: GutState, kb, dt_min: float) -> None:
         fermented = first_order_release(amount, calibration.FERMENTATION_RATE_PER_MIN, dt_min)
         state.intestine_species[compound] = max(0.0, amount - fermented)
         state.intestine_gas_ml += (
-            fermented * fermentability * calibration.FERMENTATION_GAS_ML_PER_G
+            fermented * fermentability * calibration_params["fermentation_gas_ml_per_g"]
         )
 
     for compound, amount in state.intestine_species.items():

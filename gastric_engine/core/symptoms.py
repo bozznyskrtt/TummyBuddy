@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
-from gastric_engine.utils import calibration
 from gastric_engine.utils.kinetics import sigmoid
 
 
-def derive_symptoms(history: list[dict], physiology: dict) -> dict[str, list[float]]:
+def derive_symptoms(
+    history: list[dict],
+    physiology: dict,
+    calibration_params: dict,
+) -> dict[str, list[float]]:
     thresholds = physiology.get("symptom_thresholds", {})
     capacity = float(physiology.get("physiology", {}).get("gastric_capacity_ml", 1000.0))
     reflux_threshold = float(thresholds.get("reflux_pressure_threshold", 0.75))
@@ -15,8 +18,9 @@ def derive_symptoms(history: list[dict], physiology: dict) -> dict[str, list[flo
     pain_threshold = float(thresholds.get("pain_irritation_threshold", 0.65))
 
     time = [point["time_min"] for point in history]
+    symptom_gain = calibration_params["symptom_gain"]
     reflux = [
-        sigmoid((point["fundus_pressure"] - reflux_threshold) * calibration.SYMPTOM_GAIN)
+        sigmoid((point["fundus_pressure"] - reflux_threshold) * symptom_gain)
         for point in history
     ]
     # Bloating is gas distension (gastric CO2 outgassing + intestinal
@@ -26,10 +30,11 @@ def derive_symptoms(history: list[dict], physiology: dict) -> dict[str, list[flo
         sigmoid(
             (
                 (point["gas_volume_ml"] + point.get("intestine_gas_ml", 0.0)) / capacity
-                + 0.3 * max(0.0, point["osmolality"] - 0.5)
+                + calibration_params["bloating_osmotic_weight"]
+                * max(0.0, point["osmolality"] - 0.5)
                 - bloating_threshold
             )
-            * calibration.SYMPTOM_GAIN
+            * symptom_gain
         )
         for point in history
     ]

@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import os
+
+from gastric_engine.characterization.providers import build_agent_provider
 from gastric_engine.core.engine import simulate
 from gastric_engine.knowledge_base.loader import load_knowledge_base
 from gastric_engine.physiology.profile_builder import build_profile
@@ -20,6 +23,13 @@ def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
+def _characterization_wiring():
+    if os.environ.get("GASTRIC_ENGINE_CHARACTERIZER_MODE") != "agent":
+        return None, False
+    provider = build_agent_provider()
+    return provider, provider is not None
+
+
 def simulate_endpoint(payload: dict) -> dict:
     kb = load_knowledge_base()
     chemicals = payload.get("chemicals", {}) or {}
@@ -33,12 +43,15 @@ def simulate_endpoint(payload: dict) -> dict:
         payload.get("clinical_profile", {}),
         learned_physiology=payload.get("learned_physiology"),
     )
+    agent, agent_enabled = _characterization_wiring()
     result = simulate(
         clean_chemicals,
         payload.get("meal_physical", {}),
         physiology,
         payload.get("simulation_config"),
         kb=kb,
+        characterization_agent=agent,
+        characterization_agent_enabled=agent_enabled,
     )
     result["unknown_compounds"] = []
     result["safety_flags"] = flags

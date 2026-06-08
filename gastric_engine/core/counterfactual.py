@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
+from gastric_engine.utils import calibration
 from gastric_engine.utils.kinetics import curve_auc, peak_time
 
 
 # Minimum AUC drop (symptom-probability * minutes) to count as a real driver.
-MATERIAL_DROP = 1.0
+MATERIAL_DROP = calibration.COUNTERFACTUAL_MATERIAL_DROP
 
 MECHANISMS = {
     "CO2_dissolved": "carbonation outgassing raised fundus pressure",
@@ -30,6 +31,8 @@ def counterfactual_attribution(
     baseline: dict,
     simulate_core_fn,
 ) -> dict:
+    calibration_params = calibration.runtime_parameters(config.get("calibration"))
+    material_drop = calibration_params["material_drop"]
     time = baseline["symptom_curves"]["time_min"]
     # Attribute on AUC (total symptom burden over time), not peak: when a peak
     # saturates near 1.0 the peak barely moves, but the AUC still discriminates.
@@ -55,7 +58,7 @@ def counterfactual_attribution(
         for symptom, base_auc in base_aucs.items():
             alt_auc = curve_auc(time, alternative["symptom_curves"].get(symptom, []))
             drop = base_auc - alt_auc
-            if drop > MATERIAL_DROP:
+            if drop > material_drop:
                 raw.setdefault(symptom, []).append(
                     {
                         "chemical": chemical,

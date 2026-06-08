@@ -24,6 +24,7 @@ def apply_properties(
     state: GutState,
     properties: dict,
     amount: float,
+    calibration_params: dict,
     *,
     compound: str,
     dt_min: float,
@@ -41,7 +42,7 @@ def apply_properties(
         state.stomach_species[compound] = max(
             0.0, state.stomach_species.get(compound, 0.0) - release
         )
-        state.gas_volume_ml += release * calibration.CO2_GAS_ML_PER_G
+        state.gas_volume_ml += release * calibration_params["co2_gas_ml_per_g"]
 
     fat_emptying = _property_value(properties, "fat_emptying")
     if fat_emptying > 0.0:

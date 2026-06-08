@@ -23,6 +23,23 @@ FERMENTATION_RATE_PER_MIN = 0.008
 FERMENTATION_GAS_ML_PER_G = 120.0
 
 SYMPTOM_GAIN = 10.0
+BLOATING_OSMOTIC_WEIGHT = 0.3
+COUNTERFACTUAL_MATERIAL_DROP = 1.0
+
+
+def runtime_parameters(overrides: dict | None = None) -> dict[str, float]:
+    parameters = {
+        "symptom_gain": SYMPTOM_GAIN,
+        "co2_gas_ml_per_g": CO2_GAS_ML_PER_G,
+        "fermentation_gas_ml_per_g": FERMENTATION_GAS_ML_PER_G,
+        "bloating_osmotic_weight": BLOATING_OSMOTIC_WEIGHT,
+        "material_drop": COUNTERFACTUAL_MATERIAL_DROP,
+    }
+    if overrides:
+        for key, value in overrides.items():
+            if key in parameters:
+                parameters[key] = float(value)
+    return parameters
 
 CALIBRATION_SOURCES = {
     "liquid_emptying": "Liquid gastric emptying half-time calibrated near 20 min.",
