@@ -65,7 +65,10 @@ def map_ingredients_to_chemicals(
     unmapped = list(raw.get("unmapped", []) or []) if isinstance(raw, dict) else []
 
     chemicals: dict[str, float] = {}
-    unknown: list[str] = list(unmapped)
+    # Entries the model dumped into "unmapped" that are actually valid compound
+    # keys just mean "this compound is absent" — not a genuine unknown ingredient,
+    # so they should not lower confidence.
+    unknown: list[str] = [item for item in unmapped if item not in kb.compound_keys]
     for key, value in raw_chemicals.items():
         number = _as_positive_number(value)
         if key in kb.compound_keys and number is not None:

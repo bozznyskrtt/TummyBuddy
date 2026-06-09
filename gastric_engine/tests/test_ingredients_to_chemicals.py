@@ -5,6 +5,27 @@ from gastric_engine.pipeline.ingredients_to_chemicals import (
 )
 
 
+def test_valid_compound_in_unmapped_is_not_reported_as_unknown():
+    kb = load_knowledge_base()
+
+    def fake_generate(prompt, **kwargs):
+        return {
+            "chemicals": {"fat": 7.0},
+            "meal_physical": {"liquid_volume_ml": 200},
+            # Gemini sometimes dumps absent-but-valid compounds here; "soy lecithin"
+            # is a genuine unknown ingredient, the rest are real vocabulary keys.
+            "unmapped": ["lactose", "caffeine", "soy lecithin"],
+        }
+
+    result = map_ingredients_to_chemicals(
+        [{"name": "fries", "amount": "1 serving"}], kb, generate=fake_generate
+    )
+
+    assert result["unknown_compounds"] == ["soy lecithin"]
+    assert "lactose" not in result["unknown_compounds"]
+    assert "caffeine" not in result["unknown_compounds"]
+
+
 def test_prompt_lists_compound_vocabulary_from_kb():
     kb = load_knowledge_base()
     prompt = build_bridge_prompt(

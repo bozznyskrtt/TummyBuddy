@@ -8,12 +8,16 @@ from typing import Any, Callable
 from gastric_engine.pipeline.gemini_client import generate_json
 
 INGREDIENT_PROMPT = (
-    "Analyze this food image. Identify the main dish and provide a standard, "
-    "detailed single-serving recipe breakdown with realistic estimations of "
-    "quantities and units. Because this data is used to predict "
-    "gastrointestinal (GI) and stomach distress, you must be highly granular "
-    "and include hidden or dissolved components like garlic, onion, cooking "
-    "oils, dairy, or wheat if they are typically present in this dish style.\n\n"
+    "Analyze this food image. Identify the main dish and provide a detailed "
+    "ingredient breakdown for ONE individual serving exactly as plated and "
+    "eaten in the photo (a single bowl or plate). Estimate the amount of each "
+    "ingredient actually consumed in that one portion — do NOT report full-batch "
+    "or full-pot recipe quantities. If the dish is normally cooked as a batch "
+    "(e.g. a stock or broth), scale the amounts down to the part that ends up in "
+    "one served portion. Because this data is used to predict gastrointestinal "
+    "(GI) and stomach distress, you must be highly granular and include hidden "
+    "or dissolved components like garlic, onion, cooking oils, dairy, or wheat "
+    "if they are typically present in this dish style.\n\n"
     "You must respond strictly in JSON format matching this schema:\n"
     "{\n"
     '  "dish": "dish name",\n'
