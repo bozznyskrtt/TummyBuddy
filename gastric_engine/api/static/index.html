@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>TummyBuddy — Meal → Symptoms</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<style>
+  body { font-family: system-ui, sans-serif; margin: 0; background: #faf7f2; color: #1f2933; }
+  header { background: #b5651d; color: #fff; padding: 16px 24px; }
+  main { max-width: 980px; margin: 0 auto; padding: 24px; }
+  .card { background: #fff; border-radius: 12px; padding: 18px; margin-bottom: 20px; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+  .row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+  .samples img { height: 64px; border-radius: 8px; cursor: pointer; border: 3px solid transparent; }
+  .samples img.sel { border-color: #b5651d; }
+  label.flag { margin-right: 14px; }
+  button { background: #b5651d; color: #fff; border: 0; padding: 10px 18px; border-radius: 8px; font-size: 15px; cursor: pointer; }
+  button:disabled { opacity: .5; cursor: default; }
+  .summary { font-size: 18px; }
+  .pill { display: inline-block; padding: 2px 10px; border-radius: 999px; color: #fff; font-size: 13px; }
+  .risk-high { background: #c0392b; } .risk-medium { background: #d68910; } .risk-low { background: #27ae60; }
+  table { border-collapse: collapse; width: 100%; }
+  td, th { text-align: left; padding: 4px 8px; border-bottom: 1px solid #eee; font-size: 14px; }
+  .muted { color: #6b7280; font-size: 13px; }
+  canvas { max-height: 320px; }
+</style>
+</head>
+<body>
+<header><h1>TummyBuddy</h1><div class="muted" style="color:#ffe">Photo of a meal → predicted gut symptoms</div></header>
+<main>
+  <div class="card">
+    <h3>1. Pick a meal</h3>
+    <div class="row samples" id="samples">
+      <img data-sample="/static/samples/ramen.jpg" src="/static/samples/ramen.jpg" alt="ramen" />
+      <img data-sample="/static/samples/fish_and_chips.jpg" src="/static/samples/fish_and_chips.jpg" alt="fish and chips" />
+      <img data-sample="/static/samples/tonkatsu_curry.jpg" src="/static/samples/tonkatsu_curry.jpg" alt="tonkatsu curry" />
+    </div>
+    <p class="muted">…or upload your own: <input type="file" id="file" accept="image/*" /></p>
+  </div>
+
+  <div class="card">
+    <h3>2. Who is eating?</h3>
+    <div id="flags">
+      <label class="flag"><input type="checkbox" value="reflux_gord" /> Reflux / GORD</label>
+      <label class="flag"><input type="checkbox" value="lactose_intolerance" /> Lactose intolerant</label>
+      <label class="flag"><input type="checkbox" value="gastritis_history" /> Gastritis</label>
+      <label class="flag"><input type="checkbox" value="ulcer_history" /> Ulcer history</label>
+      <label class="flag"><input type="checkbox" value="nsaid_use" /> NSAID use</label>
+    </div>
+    <p><button id="go">Analyze meal</button> <span id="status" class="muted"></span></p>
+  </div>
+
+  <div id="results" style="display:none">
+    <div class="card">
+      <h3 id="dish"></h3>
+      <div class="summary" id="summary"></div>
+      <p class="muted" id="unknowns"></p>
+    </div>
+    <div class="card"><h3>Symptoms over time</h3><canvas id="symptomChart"></canvas></div>
+    <div class="card"><h3>Why (mechanisms)</h3><canvas id="mechChart"></canvas></div>
+    <div class="card"><h3>Root causes</h3><div id="causes"></div></div>
+    <div class="card"><h3>Detected ingredients → chemicals</h3>
+      <div class="row" style="align-items:flex-start">
+        <div style="flex:1"><table id="ingredients"></table></div>
+        <div style="flex:1"><table id="chemicals"></table></div>
+      </div>
+    </div>
+  </div>
+</main>
+<script>
+let selectedSample = null, symptomChart, mechChart;
+const $ = (id) => document.getElementById(id);
+
+document.querySelectorAll('#samples img').forEach((img) => {
+  img.onclick = () => {
+    document.querySelectorAll('#samples img').forEach((i) => i.classList.remove('sel'));
+    img.classList.add('sel');
+    selectedSample = img.dataset.sample;
+    $('file').value = '';
+  };
+});
+
+function clinicalProfile() {
+  const profile = {};
+  document.querySelectorAll('#flags input:checked').forEach((c) => { profile[c.value] = true; });
+  return profile;
+}
+
+async function imageBlob() {
+  const f = $('file').files[0];
+  if (f) return f;
+  if (selectedSample) return await (await fetch(selectedSample)).blob();
+  return null;
+}
+
+$('go').onclick = async () => {
+  const blob = await imageBlob();
+  if (!blob) { $('status').textContent = 'Choose or upload an image first.'; return; }
+  $('go').disabled = true; $('status').textContent = 'Asking Gemini and simulating…';
+  const form = new FormData();
+  form.append('image', blob, 'meal.jpg');
+  form.append('clinical_profile', JSON.stringify(clinicalProfile()));
+  form.append('simulation_config', JSON.stringify({ duration_min: 360, output_dt_min: 10 }));
+  try {
+    const res = await fetch('/analyze-image', { method: 'POST', body: form });
+    if (!res.ok) throw new Error(await res.text());
+    render(await res.json());
+    $('status').textContent = '';
+  } catch (e) {
+    $('status').textContent = 'Error: ' + e.message;
+  } finally {
+    $('go').disabled = false;
+  }
+};
+
+function render(data) {
+  $('results').style.display = 'block';
+  $('dish').textContent = '🍽️ ' + (data.dish || 'meal');
+  const s = data.summary || {};
+  $('summary').innerHTML =
+    `Main symptom: <b>${s.main_symptom ?? '—'}</b> · ` +
+    `<span class="pill risk-${s.risk_level || 'low'}">${(s.risk_level||'low').toUpperCase()}</span> · ` +
+    `peak ~${s.peak_time_min ?? '?'} min · confidence: ${s.confidence ?? '—'}`;
+  const unknown = data.unknown_compounds || [];
+  $('unknowns').textContent = unknown.length ? 'Unmapped (lowers confidence): ' + unknown.join(', ') : '';
+
+  const t = (data.symptom_curves || {}).time_min || [];
+  drawLine('symptomChart', (c) => symptomChart = c, t, data.symptom_curves || {},
+    ['reflux', 'bloating', 'diarrhea', 'upper_pain'], symptomChart);
+  drawLine('mechChart', (c) => mechChart = c, t, data.mechanism_curves || {},
+    ['gastric_pressure', 'fundus_pressure', 'gas_volume_ml', 'pH'], mechChart);
+
+  const causes = data.root_causes || {};
+  $('causes').innerHTML = Object.entries(causes).map(([sym, info]) => {
+    const drivers = (info.drivers || []).map((d) =>
+      `<li>${d.chemical} — ${(d.contribution*100).toFixed(0)}% <span class="muted">(${d.mechanism||''})</span></li>`).join('');
+    return `<p><b>${sym}</b> (peak ~${info.peak_time_min ?? '?'} min)<ul>${drivers}</ul>` +
+      `<span class="muted">${info.advice||''}</span></p>`;
+  }).join('') || '<span class="muted">No dominant driver.</span>';
+
+  $('ingredients').innerHTML = '<tr><th>Ingredient</th><th>Amount</th></tr>' +
+    (data.ingredients || []).map((i) => `<tr><td>${i.name}</td><td>${i.amount||''}</td></tr>`).join('');
+  $('chemicals').innerHTML = '<tr><th>Compound</th><th>Amount</th></tr>' +
+    Object.entries(data.chemicals || {}).map(([k, v]) => `<tr><td>${k}</td><td>${v}</td></tr>`).join('');
+}
+
+const COLORS = ['#c0392b', '#2980b9', '#27ae60', '#8e44ad', '#d68910', '#16a085'];
+function drawLine(canvasId, store, labels, curves, keys, existing) {
+  if (existing) existing.destroy();
+  const datasets = keys.filter((k) => Array.isArray(curves[k])).map((k, i) => ({
+    label: k, data: curves[k], borderColor: COLORS[i % COLORS.length],
+    backgroundColor: 'transparent', tension: 0.3, pointRadius: 0,
+  }));
+  store(new Chart($(canvasId), {
+    type: 'line',
+    data: { labels, datasets },
+    options: { responsive: true, interaction: { mode: 'index', intersect: false },
+      scales: { x: { title: { display: true, text: 'minutes' } } } },
+  }));
+}
+</script>
+</body>
+</html>
