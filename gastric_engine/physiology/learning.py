@@ -17,7 +17,7 @@ DEFAULT_PRIORS = {
         "reflux_pressure_threshold": {"mean": 0.75, "variance": 0.12},
         "bloating_volume_threshold": {"mean": 0.80, "variance": 0.12},
         "pain_irritation_threshold": {"mean": 0.65, "variance": 0.10},
-        "diarrhea_osmotic_threshold": {"mean": 0.70, "variance": 0.10},
+        "diarrhea_osmotic_threshold": {"mean": 1.15, "variance": 0.10},
     },
 }
 

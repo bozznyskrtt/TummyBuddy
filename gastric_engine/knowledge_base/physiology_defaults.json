@@ -20,7 +20,7 @@
       "reflux_pressure_threshold": 0.75,
       "bloating_volume_threshold": 0.80,
       "pain_irritation_threshold": 0.65,
-      "diarrhea_osmotic_threshold": 0.70
+      "diarrhea_osmotic_threshold": 1.15
     }
   },
 

@@ -22,7 +22,11 @@ ALDH_G_PER_MIN = 0.20
 FERMENTATION_RATE_PER_MIN = 0.008
 FERMENTATION_GAS_ML_PER_G = 120.0
 
-SYMPTOM_GAIN = 10.0
+# Sigmoid steepness for reflux/bloating. Lowered from 10.0 so symptoms ramp
+# gradually instead of slamming 0->100% across a narrow band: a moderately fatty
+# meal now reads as a visible-but-mild risk, and only an extreme load approaches
+# saturation. See utils/calibration tuning notes and tests/test_acceptance.
+SYMPTOM_GAIN = 4.5
 BLOATING_OSMOTIC_WEIGHT = 0.3
 COUNTERFACTUAL_MATERIAL_DROP = 1.0
 

@@ -30,6 +30,37 @@ assert.ok(
   "physical curves should retain raw values for unit labels"
 );
 
+const reactionUnits = adaptSimulation({
+  summary: { confidence: "medium" },
+  symptom_curves: { time_min: [0, 30], reflux: [0, 0], bloating: [0, 0], diarrhea: [0, 0], upper_pain: [0, 0] },
+  mechanism_curves: {
+    time_min: [0, 30],
+    gastric_pressure: [0.03, 0.03],
+    gas_volume_ml: [20, 20],
+    pH: [2.8, 2.8],
+    acetaldehyde_g: [0, 1.46],
+  },
+});
+assert.ok(
+  reactionUnits.timeline.reactions.acetaldehyde.every((p) => typeof p.rawValue === "undefined"),
+  "reaction curves should stay normalized display signals, not raw units"
+);
+
+const baselineGas = adaptSimulation({
+  summary: { confidence: "medium" },
+  symptom_curves: { time_min: [0, 30], reflux: [0, 0], bloating: [0, 0], diarrhea: [0, 0], upper_pain: [0, 0] },
+  mechanism_curves: {
+    time_min: [0, 30],
+    gastric_pressure: [0.03, 0.03],
+    gas_volume_ml: [20, 20],
+    pH: [2.8, 2.8],
+  },
+});
+assert.ok(
+  baselineGas.timeline.physical.gasVolume.every((p) => p.value < 0.1),
+  "baseline 20 ml gas should not render as a max-height normalized bar"
+);
+
 // Root causes come from the backend counterfactual, ranked, as percentages.
 assert.ok(sim.rootCauses.length > 0, "should surface at least one root cause");
 assert.ok(

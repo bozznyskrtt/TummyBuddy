@@ -38,12 +38,14 @@ def derive_symptoms(
         )
         for point in history
     ]
+    # Gains lowered (was 8.0) so osmotic/irritant load ramps these symptoms
+    # gradually rather than saturating to ~100% once the threshold is crossed.
     diarrhea = [
-        sigmoid((point["intestine_osmolality"] - diarrhea_threshold) * 8.0)
+        sigmoid((point["intestine_osmolality"] - diarrhea_threshold) * 2.2)
         for point in history
     ]
     upper_pain = [
-        sigmoid((point["irritation"] - pain_threshold) * 8.0) for point in history
+        sigmoid((point["irritation"] - pain_threshold) * 4.0) for point in history
     ]
 
     return {

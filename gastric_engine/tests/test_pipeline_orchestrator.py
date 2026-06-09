@@ -11,6 +11,13 @@ def test_orchestrator_chains_stages_into_simulation():
             "chemicals": {"fat": 30.0, "protein": 28.0},
             "meal_physical": {"solid_volume_ml": 400, "liquid_volume_ml": 100},
             "unknown_compounds": ["malt vinegar"],
+            "filtered_compounds": [
+                {
+                    "compound": "CO2_dissolved",
+                    "amount": 3.0,
+                    "reason": "no carbonated beverage ingredient was detected",
+                }
+            ],
         }
 
     result = analyze_meal(
@@ -25,6 +32,7 @@ def test_orchestrator_chains_stages_into_simulation():
     assert result["ingredients"][0]["name"] == "cod"
     assert result["chemicals"] == {"fat": 30.0, "protein": 28.0}
     assert "malt vinegar" in result["unknown_compounds"]
+    assert result["metadata"]["filtered_compounds"][0]["compound"] == "CO2_dissolved"
     assert "summary" in result
     assert "symptom_curves" in result
     assert "mechanism_curves" in result

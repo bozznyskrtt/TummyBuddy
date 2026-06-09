@@ -53,7 +53,9 @@ def ferment_in_intestine(
         0.1,
         2.0,
     )
-    state.cramping = sigmoid((state.intestine_osmolality - 0.55) * 5.0)
+    # Softened (was threshold 0.55, gain 5.0) so cramping tracks osmotic load
+    # gradually instead of pinning near 100% for any fermentable meal.
+    state.cramping = sigmoid((state.intestine_osmolality - 0.95) * 3.0)
 
 
 def _property_value(properties: dict, dimension: str) -> float:

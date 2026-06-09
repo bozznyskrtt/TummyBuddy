@@ -9,6 +9,22 @@ const PALETTE = ["#E11D48", "#F59E0B", "#0F766E", "#2563EB", "#7C3AED", "#C2410C
 const TARGET_MINUTES = [0, 30, 60, 120, 180, 240];
 
 const LEVEL_SCORE = { high: 0.85, medium: 0.6, low: 0.3 };
+const PHYSICAL_SCALE_MAX = {
+  gastricPressure: 1.5,
+  gasVolume: 500,
+  stomachPH: 7,
+};
+
+// Absolute reference maxima for reaction signals so bar height reflects true
+// magnitude. Without these the curves self-normalize and a near-zero value (e.g.
+// irritation 0.06 on its 0-2 scale) renders as a misleading flat "100%".
+const REACTION_SCALE_MAX = {
+  lactoseRemaining: 30, // g
+  irritation: 1.0, // engine clamps 0-2; >=1 is severe
+  cramping: 1.0, // 0-1 index
+  intestinalGas: 200, // ml
+  acetaldehyde: 1.0, // g
+};
 
 // Backend symptom keys -> the keys the UI charts/colors expect.
 const SYMPTOM_MAP = { reflux: "reflux", bloating: "bloating", diarrhea: "diarrhea", upper_pain: "pain" };
@@ -29,16 +45,16 @@ function nearestIndex(timeMin, target) {
 // Sample a backend curve at the UI's coarse minute grid. Mechanism curves are in
 // physical units, so `normalize` rescales each series to 0-1 for the bar charts;
 // symptom curves are already 0-1 sigmoids and pass through raw.
-function sampleCurve(timeMin, values, { normalize = false } = {}) {
+function sampleCurve(timeMin, values, { includeRaw = false, normalize = false, scaleMax = null } = {}) {
   if (!Array.isArray(timeMin) || !Array.isArray(values) || values.length === 0) {
     return TARGET_MINUTES.map((minute) => ({ minute, value: 0 }));
   }
-  const max = normalize ? Math.max(...values.map((v) => Math.abs(v)), 0) : 1;
+  const max = normalize ? scaleMax || Math.max(...values.map((v) => Math.abs(v)), 0) : 1;
   const scale = normalize && max > 0 ? 1 / max : 1;
   return TARGET_MINUTES.map((minute) => {
     const raw = values[nearestIndex(timeMin, minute)] ?? 0;
-    const point = { minute, value: Math.max(0, raw * scale) };
-    if (normalize) point.rawValue = raw;
+    const point = { minute, value: Math.max(0, Math.min(1, raw * scale)) };
+    if (includeRaw) point.rawValue = raw;
     return point;
   });
 }
@@ -78,9 +94,21 @@ function adaptSimulation(result) {
   const mc = result.mechanism_curves || {};
   const mechTime = mc.time_min || [];
   const physical = {
-    gastricPressure: sampleCurve(mechTime, mc.gastric_pressure || [], { normalize: true }),
-    gasVolume: sampleCurve(mechTime, mc.gas_volume_ml || [], { normalize: true }),
-    stomachPH: sampleCurve(mechTime, mc.pH || [], { normalize: true }),
+    gastricPressure: sampleCurve(mechTime, mc.gastric_pressure || [], {
+      includeRaw: true,
+      normalize: true,
+      scaleMax: PHYSICAL_SCALE_MAX.gastricPressure,
+    }),
+    gasVolume: sampleCurve(mechTime, mc.gas_volume_ml || [], {
+      includeRaw: true,
+      normalize: true,
+      scaleMax: PHYSICAL_SCALE_MAX.gasVolume,
+    }),
+    stomachPH: sampleCurve(mechTime, mc.pH || [], {
+      includeRaw: true,
+      normalize: true,
+      scaleMax: PHYSICAL_SCALE_MAX.stomachPH,
+    }),
   };
 
   // Reaction/biochemistry signals — drop series that never leave zero so the
@@ -95,7 +123,10 @@ function adaptSimulation(result) {
   const reactions = {};
   for (const [key, values] of Object.entries(reactionSources)) {
     if (seriesPeak(values) > 1e-6) {
-      reactions[key] = sampleCurve(mechTime, values, { normalize: true });
+      reactions[key] = sampleCurve(mechTime, values, {
+        normalize: true,
+        scaleMax: REACTION_SCALE_MAX[key],
+      });
     }
   }
 
