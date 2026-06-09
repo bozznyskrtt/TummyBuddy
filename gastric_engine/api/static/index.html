@@ -58,6 +58,9 @@
     </div>
     <div class="card"><h3>Symptoms over time</h3><canvas id="symptomChart"></canvas></div>
     <div class="card"><h3>Why (mechanisms)</h3><canvas id="mechChart"></canvas></div>
+    <div class="card"><h3>Digestion chemistry over time</h3>
+      <p class="muted">Substrate digested, metabolites formed, and osmotic load — straight from the biochemistry solver.</p>
+      <canvas id="chemChart"></canvas></div>
     <div class="card"><h3>Root causes</h3><div id="causes"></div></div>
     <div class="card"><h3>Detected ingredients → chemicals</h3>
       <div class="row" style="align-items:flex-start">
@@ -68,7 +71,7 @@
   </div>
 </main>
 <script>
-let selectedSample = null, symptomChart, mechChart;
+let selectedSample = null, symptomChart, mechChart, chemChart;
 const $ = (id) => document.getElementById(id);
 
 document.querySelectorAll('#samples img').forEach((img) => {
@@ -128,7 +131,8 @@ function render(data) {
   drawLine('symptomChart', (c) => symptomChart = c, t, data.symptom_curves || {},
     ['reflux', 'bloating', 'diarrhea', 'upper_pain'], symptomChart);
   drawLine('mechChart', (c) => mechChart = c, t, data.mechanism_curves || {},
-    ['gastric_pressure', 'fundus_pressure', 'gas_volume_ml', 'pH'], mechChart);
+    ['gastric_pressure', 'fundus_pressure', 'gas_volume_ml', 'intestine_gas_ml', 'pH'], mechChart);
+  drawChemistry(t, data.mechanism_curves || {});
 
   const causes = data.root_causes || {};
   $('causes').innerHTML = Object.entries(causes).map(([sym, info]) => {
@@ -145,6 +149,38 @@ function render(data) {
 }
 
 const COLORS = ['#c0392b', '#2980b9', '#27ae60', '#8e44ad', '#d68910', '#16a085'];
+
+// Biochemistry over time: grams on the left axis, osmolality (0–1) on the right,
+// so substrate/metabolite masses and osmotic load both read clearly.
+function drawChemistry(labels, curves) {
+  if (chemChart) chemChart.destroy();
+  const grams = ['lactose_remaining_g', 'acetaldehyde_g'];
+  const osmo = ['osmolality', 'intestine_osmolality'];
+  const datasets = [];
+  grams.forEach((k, i) => {
+    if (Array.isArray(curves[k]))
+      datasets.push({ label: k, data: curves[k], borderColor: COLORS[i % COLORS.length],
+        backgroundColor: 'transparent', tension: 0.3, pointRadius: 0, yAxisID: 'g' });
+  });
+  osmo.forEach((k, i) => {
+    if (Array.isArray(curves[k]))
+      datasets.push({ label: k, data: curves[k], borderColor: COLORS[(i + 2) % COLORS.length],
+        backgroundColor: 'transparent', tension: 0.3, pointRadius: 0, borderDash: [6, 3], yAxisID: 'o' });
+  });
+  if (!datasets.length) return;
+  chemChart = new Chart($('chemChart'), {
+    type: 'line',
+    data: { labels, datasets },
+    options: { responsive: true, interaction: { mode: 'index', intersect: false },
+      scales: {
+        x: { title: { display: true, text: 'minutes' } },
+        g: { type: 'linear', position: 'left', beginAtZero: true, title: { display: true, text: 'grams' } },
+        o: { type: 'linear', position: 'right', min: 0, max: 1, grid: { drawOnChartArea: false },
+          title: { display: true, text: 'osmolality (0–1)' } },
+      } },
+  });
+}
+
 function drawLine(canvasId, store, labels, curves, keys, existing) {
   if (existing) existing.destroy();
   const datasets = keys.filter((k) => Array.isArray(curves[k])).map((k, i) => ({
