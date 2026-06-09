@@ -29,12 +29,13 @@
       "osmotic_coeff": 0.0,
       "carbonation": 0.0,
       "fat_emptying": 0.7,
-      "les_relaxant": 0.0,
+      "les_relaxant": 1.0,
       "acid_secretagogue": 0.0,
       "irritant_potential": 0.0,
       "fermentability": 0.0,
       "bulk": 0.0,
-      "enzyme_targets": {}
+      "enzyme_targets": {},
+      "potency": { "les_relaxant": 30.0 }
     },
     "reactions": []
   },

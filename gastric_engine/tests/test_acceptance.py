@@ -159,6 +159,30 @@ def test_coke_meal_has_higher_pressure_than_salad_and_gas_decays():
     assert coke_gas[-1] < max(coke_gas)
 
 
+def test_high_fat_solid_meal_produces_visible_reflux_signal():
+    from gastric_engine.core.engine import simulate_core
+    from gastric_engine.physiology.profile_builder import build_profile
+
+    physiology = build_profile({})
+    low_fat = simulate_core(
+        chemicals={"fat": 2, "protein": 43, "starch": 40, "fiber": 10},
+        meal_physical={"solid_volume_ml": 575, "liquid_volume_ml": 75},
+        physiology=physiology,
+        config={"duration_min": 240, "output_dt_min": 10},
+    )
+    high_fat = simulate_core(
+        chemicals={"fat": 20.4, "protein": 43, "starch": 40, "fiber": 10},
+        meal_physical={"solid_volume_ml": 575, "liquid_volume_ml": 75},
+        physiology=physiology,
+        config={"duration_min": 240, "output_dt_min": 10},
+    )
+
+    assert max(high_fat["mechanism_curves"]["fundus_pressure"]) > (
+        max(low_fat["mechanism_curves"]["fundus_pressure"]) + 0.1
+    )
+    assert max(high_fat["symptom_curves"]["reflux"]) >= 0.005
+
+
 def test_lactose_and_durian_beer_biochemistry_are_data_driven():
     from gastric_engine.core.engine import simulate_core
     from gastric_engine.physiology.profile_builder import build_profile

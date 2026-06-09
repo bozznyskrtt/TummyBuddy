@@ -11,7 +11,7 @@ MATERIAL_DROP = calibration.COUNTERFACTUAL_MATERIAL_DROP
 
 MECHANISMS = {
     "CO2_dissolved": "carbonation outgassing raised fundus pressure",
-    "fat": "delayed emptying kept the stomach full and pressurized",
+    "fat": "delayed emptying and LES relaxation increased reflux pressure",
     "caffeine": "LES relaxation and acid stimulation",
     "ethanol": "LES relaxation and mucosal irritation",
     "lactose": "undigested lactose raised osmotic load and fermentation",
